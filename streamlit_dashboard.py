@@ -79,7 +79,7 @@ st.markdown("""
         🏠 Airbnb Pricing Analysis: European Cities
     </h1>
     <p style='color: white; text-align: center; margin: 10px 0 0 0; font-size: 16px;'>
-        Analysis of 52,810 Listings Across 10 Major European Destinations
+        Analysis of 51,707 Listings Across 10 Major European Destinations
     </p>
 </div>
 """, unsafe_allow_html=True)
