@@ -365,16 +365,13 @@ key_features = [
 
 corr_matrix = df_filtered[key_features].corr()
 
-# Display correlation matrix as styled dataframe
+# Display correlation matrix as dataframe
 st.write("**Correlation Matrix of Key Features**")
 st.write("Values range from -1 (negative correlation) to +1 (positive correlation)")
 
-# Style the dataframe
-styled_corr = corr_matrix.style.background_gradient(cmap='RdBu', vmin=-1, vmax=1, axis=None)\
-    .format("{:.2f}")\
-    .set_properties(**{'font-size': '10pt'})
-
-st.dataframe(styled_corr, use_container_width=True)
+# Format the dataframe
+corr_display = corr_matrix.round(2)
+st.dataframe(corr_display, use_container_width=True)
 
 # Show top correlations
 st.write("**Top Positive Correlations:**")
