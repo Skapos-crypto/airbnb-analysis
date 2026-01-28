@@ -294,9 +294,17 @@ display_airport = airport_stats.copy()
 display_airport['avg_price'] = display_airport['avg_price'].round(0)
 display_airport['satisfaction'] = display_airport['satisfaction'].round(2)
 display_airport.columns = ['Distance to Airport', 'Avg Price (€)', 'Satisfaction Score']
-st.dataframe(display_airport, use_container_width=True, hide_indexal_listings'], city_sorted['tourism_pressure_ratio']))
-))
+st.dataframe(display_airport, use_container_width=True, hide_index=True)
 
+st.markdown("---")
+
+# ============================================================================
+# PRICE ANALYSIS
+# ============================================================================
+
+st.header("💰 Price Distribution and Comparison")
+
+# City comparison
 st.subheader("Average Nightly Price by City")
 
 city_sorted = city_summary_filtered.sort_values('avg_price', ascending=False)
