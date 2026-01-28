@@ -322,7 +322,6 @@ def create_correlation_heatmap():
 # ============================================================================
 
 app = Dash(__name__)
-server = app.server  # Expose the Flask server for deployment
 
 app.layout = html.Div([
     # Header
@@ -393,4 +392,4 @@ if __name__ == '__main__':
     print("✓ Navigate to: http://127.0.0.1:8050")
     print("✓ Press Ctrl+C to stop\n")
     
-    app.run(debug=True, host='0.0.0.0', port=8050)
+    app.run(debug=True, port=8050)
