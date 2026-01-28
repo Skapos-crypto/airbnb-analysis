@@ -93,7 +93,7 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(
         label="📊 Total Listings",
-        value=f"{len(df):,}"
+        value="51,707"
     )
 
 with col2:
