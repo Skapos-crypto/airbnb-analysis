@@ -400,6 +400,6 @@ st.dataframe(corr_df.head(10), use_container_width=True, hide_index=True)
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #7f8c8d; padding: 20px;'>
-    <p>📊 Data Analysis | 52,810 listings | 10 European cities | Real-time airport data from OpenFlights.org</p>
+    <p>📊 Data Analysis | 51,707 listings | 10 European cities | Real-time airport data from OpenFlights.org</p>
 </div>
 """, unsafe_allow_html=True)
