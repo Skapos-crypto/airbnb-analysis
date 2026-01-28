@@ -5,9 +5,6 @@ Interactive visualization of pricing patterns across European cities
 """
 
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import numpy as np
 import streamlit as st
 import warnings
@@ -161,37 +158,32 @@ city_summary_filtered = city_summary[city_summary['city'].isin(selected_cities)]
 st.header("🌍 Tourism Demand Analysis")
 
 # Tourism intensity scatter
-fig_tourism = px.scatter(
-    city_summary_filtered,
-    x='tourism_pressure_ratio',
-    y='avg_price',
-    size='total_listings',
-    color='avg_price',
-    text='city',
-    title='Tourism Pressure Ratio vs Average Nightly Price',
-    labels={'tourism_pressure_ratio': 'Tourism Pressure Ratio (Annual Tourists per Resident)',
-            'avg_price': 'Average Nightly Price (€)'},
-    color_continuous_scale='Viridis',
-    size_max=50
-)
-
-fig_tourism.update_traces(textposition='top center', textfont=dict(size=11, color='black'))
-fig_tourism.update_layout(height=500, showlegend=False, font=dict(size=12))
+st.subheader("Tourism Pressure Ratio vs Average Nightly Price")
 
 if len(city_summary_filtered) > 1:
     corr = city_summary_filtered['tourism_pressure_ratio'].corr(city_summary_filtered['avg_price'])
-    fig_tourism.add_annotation(
-        text=f"Pearson Correlation: {corr:.3f}",
-        xref="paper", yref="paper",
-        x=0.02, y=0.98,
-        showarrow=False,
-        bgcolor="rgba(255, 255, 255, 0.8)",
-        bordercolor="black",
-        borderwidth=2,
-        font=dict(size=14, color="black")
-    )
+    st.info(f"📊 **Pearson Correlation: {corr:.3f}**")
 
-st.plotly_chart(fig_tourism, use_container_width=True)
+# Create scatter chart data
+scatter_data = city_summary_filtered[['city', 'tourism_pressure_ratio', 'avg_price', 'total_listings']].copy()
+scatter_data = scatter_data.sort_values('tourism_pressure_ratio')
+
+st.scatter_chart(
+    scatter_data,
+    x='tourism_pressure_ratio',
+    y='avg_price',
+    size='total_listings',
+    color='city',
+    height=500
+)
+
+# Display data table
+st.write("**City Details:**")
+display_df = city_summary_filtered[['city', 'tourism_pressure_ratio', 'avg_price', 'total_listings']].copy()
+display_df.columns = ['City', 'Tourism Pressure Ratio', 'Avg Price (€)', 'Total Listings']
+display_df['Avg Price (€)'] = display_df['Avg Price (€)'].round(0)
+display_df['Tourism Pressure Ratio'] = display_df['Tourism Pressure Ratio'].round(2)
+st.dataframe(display_df, use_container_width=True, hide_index=True)
 
 st.markdown("---")
 
@@ -210,35 +202,23 @@ with col1:
     }).reset_index()
     
     dist_stats.columns = ['distance_bin', 'avg_price', 'count']
+    st.subheader("Price by Distance from City Center")
+    
+    dist_stats = df_filtered.groupby('distance_bin', observed=True).agg({
+        'realSum': ['mean', 'count']
+    }).reset_index()
+    
+    dist_stats.columns = ['distance_bin', 'avg_price', 'count']
     dist_stats = dist_stats.dropna()
     
-    fig_distance = go.Figure()
+    # Create chart data
+    chart_data = dist_stats.set_index('distance_bin')['avg_price']
+    st.bar_chart(chart_data, height=400)
     
-    fig_distance.add_trace(go.Bar(
-        x=dist_stats['distance_bin'],
-        y=dist_stats['avg_price'],
-        marker_color='steelblue',
-        text=dist_stats['avg_price'].round(0),
-        texttemplate='€%{text}',
-        textposition='outside',
-        hovertemplate='<b>%{x}</b><br>Avg Price: €%{y:.0f}<br>Listings: %{customdata}<extra></extra>',
-        customdata=dist_stats['count']
-    ))
-    
-    fig_distance.update_layout(
-        title='Average Price by Distance from City Center',
-        xaxis_title='Distance from City Center',
-        yaxis_title='Average Nightly Price (€)',
-        height=450,
-        font=dict(size=12)
-    )
-    
-    st.plotly_chart(fig_distance, use_container_width=True)
-
-with col2:
-    # Metro accessibility
-    metro_data = df_filtered.groupby('metro_accessibility', observed=True)['realSum'].mean().reset_index()
-    metro_data.columns = ['metro_accessibility', 'avg_price']
+    # Show statistics
+    st.write("**Statistics:**")
+    for _, row in dist_stats.iterrows():
+        st.write(f"**{row['distance_bin']}**: €{row['avg_price']:.0f} ({int(row['count'])} listings)"e']
     metro_data = metro_data.dropna()
     
     fig_metro = go.Figure()
@@ -249,33 +229,20 @@ with col2:
         x=metro_data['metro_accessibility'],
         y=metro_data['avg_price'],
         marker_color=colors[:len(metro_data)],
-        text=metro_data['avg_price'].round(0),
-        texttemplate='€%{text}',
-        textposition='outside'
-    ))
+    st.subheader("Price by Metro Station Proximity")
     
-    fig_metro.update_layout(
-        title='Average Price by Metro Station Proximity',
-        xaxis_title='Distance to Nearest Metro Station',
-        yaxis_title='Average Nightly Price (€)',
-        height=450,
-        showlegend=False,
-        font=dict(size=12)
-    )
+    metro_data = df_filtered.groupby('metro_accessibility', observed=True)['realSum'].mean().reset_index()
+    metro_data.columns = ['metro_accessibility', 'avg_price']
+    metro_data = metro_data.dropna()
     
-    st.plotly_chart(fig_metro, use_container_width=True)
-
-# Airport distance analysis
-airport_stats = df_filtered.groupby('airport_distance_bin', observed=True).agg({
-    'realSum': 'mean',
-    'guest_satisfaction_overall': 'mean'
-}).reset_index()
-
-airport_stats.columns = ['distance_bin', 'avg_price', 'satisfaction']
-airport_stats = airport_stats.dropna()
-
-fig_airport = make_subplots(specs=[[{"secondary_y": True}]])
-
+    # Create chart
+    chart_data = metro_data.set_index('metro_accessibility')['avg_price']
+    st.bar_chart(chart_data, height=400)
+    
+    # Show statistics
+    st.write("**Statistics:**")
+    for _, row in metro_data.iterrows():
+        st.write(f"**{row['metro_accessibility']}**: €{row['avg_price']:.0f}"
 fig_airport.add_trace(
     go.Bar(x=airport_stats['distance_bin'], y=airport_stats['avg_price'],
            name='Average Price', marker_color='#3498db'),
@@ -291,67 +258,53 @@ fig_airport.add_trace(
 
 fig_airport.update_layout(
     title='Price and Satisfaction by Distance to Airport',
-    height=450,
-    font=dict(size=12)
-)
+st.subheader("Price and Satisfaction by Distance to Airport")
 
-fig_airport.update_xaxes(title_text="Distance to Nearest Major Airport")
-fig_airport.update_yaxes(title_text="Average Nightly Price (€)", secondary_y=False)
-fig_airport.update_yaxes(title_text="Guest Satisfaction Score", secondary_y=True)
+airport_stats = df_filtered.groupby('airport_distance_bin', observed=True).agg({
+    'realSum': 'mean',
+    'guest_satisfaction_overall': 'mean'
+}).reset_index()
 
-st.plotly_chart(fig_airport, use_container_width=True)
+airport_stats.columns = ['distance_bin', 'avg_price', 'satisfaction']
+airport_stats = airport_stats.dropna()
 
-st.markdown("---")
+# Create two columns for dual axis effect
+col_a, col_b = st.columns(2)
 
-# ============================================================================
-# PRICE ANALYSIS
-# ============================================================================
+with col_a:
+    st.write("**Average Price (€)**")
+    chart_data = airport_stats.set_index('distance_bin')['avg_price']
+    st.bar_chart(chart_data, height=350)
 
-st.header("💰 Price Distribution and Comparison")
+with col_b:
+    st.write("**Guest Satisfaction Score**")
+    chart_data = airport_stats.set_index('distance_bin')['satisfaction']
+    st.line_chart(chart_data, height=350, color="#e74c3c")
 
-# City comparison
-city_sorted = city_summary_filtered.sort_values('avg_price', ascending=True)
-
-fig_city_comp = go.Figure()
-
-fig_city_comp.add_trace(go.Bar(
-    y=city_sorted['city'],
-    x=city_sorted['avg_price'],
-    orientation='h',
-    marker_color=city_sorted['avg_price'],
-    marker_colorscale='Viridis',
-    text=city_sorted['avg_price'].round(0),
-    texttemplate='€%{text}',
-    textposition='outside',
-    hovertemplate='<b>%{y}</b><br>Price: €%{x:.0f}<br>Listings: %{customdata[0]}<br>Tourism Ratio: %{customdata[1]:.2f}<extra></extra>',
-    customdata=np.column_stack((city_sorted['total_listings'], city_sorted['tourism_pressure_ratio']))
+# Show combined statistics
+st.write("**Combined Statistics:**")
+display_airport = airport_stats.copy()
+display_airport['avg_price'] = display_airport['avg_price'].round(0)
+display_airport['satisfaction'] = display_airport['satisfaction'].round(2)
+display_airport.columns = ['Distance to Airport', 'Avg Price (€)', 'Satisfaction Score']
+st.dataframe(display_airport, use_container_width=True, hide_indexal_listings'], city_sorted['tourism_pressure_ratio']))
 ))
 
-fig_city_comp.update_layout(
-    title='Average Nightly Price by City',
-    xaxis_title='Average Nightly Price (€)',
-    height=500,
-    font=dict(size=12)
-)
+st.subheader("Average Nightly Price by City")
 
-st.plotly_chart(fig_city_comp, use_container_width=True)
+city_sorted = city_summary_filtered.sort_values('avg_price', ascending=False)
 
-# Price distribution
-fig_price_dist = go.Figure()
+# Create horizontal bar chart
+chart_data = city_sorted.set_index('city')['avg_price']
+st.bar_chart(chart_data, height=500, horizontal=True)
 
-for city in sorted(df_filtered['city'].unique()):
-    city_df = df_filtered[df_filtered['city'] == city]
-    fig_price_dist.add_trace(go.Box(
-        y=city_df['realSum'],
-        name=city.capitalize(),
-        boxmean='sd'
-    ))
-
-fig_price_dist.update_layout(
-    title='Price Distribution by City (with Standard Deviation)',
-    yaxis_title='Nightly Price (€)',
-    height=500,
-    showlegend=True,
+# Show detailed city data
+st.write("**City Comparison Details:**")
+display_city = city_sorted[['city', 'avg_price', 'total_listings', 'tourism_pressure_ratio']].copy()
+display_city['avg_price'] = display_city['avg_price'].round(0)
+display_city['tourism_pressure_ratio'] = display_city['tourism_pressure_ratio'].round(2)
+display_city.columns = ['City', 'Avg Price (€)', 'Total Listings', 'Tourism Ratio']
+st.dataframe(display_city, use_container_width=True, hide_index
     font=dict(size=12)
 )
 
@@ -364,32 +317,34 @@ room_analysis = df_filtered.groupby('room_type').agg({
     'person_capacity': 'mean'
 }).round(2).reset_index()
 
-fig_price_per_person = go.Figure()
+st.subheader("Price Distribution by City")
 
-fig_price_per_person.add_trace(go.Bar(
-    x=room_analysis['room_type'],
-    y=room_analysis['price_per_person'],
-    marker_color=['#3498db', '#2ecc71', '#f39c12'],
-    text=room_analysis['price_per_person'].round(0),
-    texttemplate='€%{text}/person',
-    textposition='outside'
-))
+# Calculate statistics for each city
+price_stats = []
+for city in sorted(df_filtered['city'].unique()):
+    city_df = df_filtered[df_filtered['city'] == city]
+    price_stats.append({
+        'City': city.capitalize(),
+st.subheader("Average Price per Person by Room Type")
 
-fig_price_per_person.update_layout(
-    title='Average Price per Person by Room Type',
-    xaxis_title='Room Type',
-    yaxis_title='Price per Person (€)',
-    height=450,
-    font=dict(size=12)
-)
+room_analysis = df_filtered.groupby('room_type').agg({
+    'price_per_person': 'mean',
+    'realSum': 'mean',
+    'person_capacity': 'mean'
+}).round(2).reset_index()
 
-st.plotly_chart(fig_price_per_person, use_container_width=True)
+# Create bar chart
+chart_data = room_analysis.set_index('room_type')['price_per_person']
+st.bar_chart(chart_data, height=400)
 
-st.markdown("---")
-
-# ============================================================================
-# CORRELATION ANALYSIS
-# ============================================================================
+# Show detailed room type data
+st.write("**Room Type Analysis:**")
+display_room = room_analysis.copy()
+display_room.columns = ['Room Type', 'Price per Person (€)', 'Avg Total Price (€)', 'Avg Capacity']
+display_room['Price per Person (€)'] = display_room['Price per Person (€)'].round(0)
+display_room['Avg Total Price (€)'] = display_room['Avg Total Price (€)'].round(0)
+display_room['Avg Capacity'] = display_room['Avg Capacity'].round(1)
+st.dataframe(display_room, use_container_width=True, hide_index=====================
 
 st.header("🔬 Feature Correlation Analysis")
 
@@ -413,21 +368,33 @@ fig_corr = go.Figure(data=go.Heatmap(
     colorbar=dict(title="Correlation")
 ))
 
-fig_corr.update_layout(
-    title='Correlation Matrix of Key Features',
-    height=600,
-    font=dict(size=10)
-)
+# Display correlation matrix as styled dataframe
+st.write("**Correlation Matrix of Key Features**")
+st.write("Values range from -1 (negative correlation) to +1 (positive correlation)")
 
-st.plotly_chart(fig_corr, use_container_width=True)
+# Style the dataframe
+styled_corr = corr_matrix.style.background_gradient(cmap='RdBu', vmin=-1, vmax=1, axis=None)\
+    .format("{:.2f}")\
+    .set_properties(**{'font-size': '10pt'})
 
-# ============================================================================
-# FOOTER
-# ============================================================================
+st.dataframe(styled_corr, use_container_width=True)
 
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #7f8c8d; padding: 20px;'>
-    <p>📊 Data Analysis | 52,810 listings | 10 European cities | Real-time airport data from OpenFlights.org</p>
-</div>
-""", unsafe_allow_html=True)
+# Show top correlations
+st.write("**Top Positive Correlations:**")
+# Get upper triangle of correlation matrix
+mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+corr_matrix_masked = corr_matrix.mask(mask)
+
+# Find top correlations
+correlations = []
+for i in range(len(corr_matrix_masked.columns)):
+    for j in range(len(corr_matrix_masked.columns)):
+        if not pd.isna(corr_matrix_masked.iloc[i, j]):
+            correlations.append({
+                'Feature 1': corr_matrix_masked.columns[i],
+                'Feature 2': corr_matrix_masked.index[j],
+                'Correlation': corr_matrix_masked.iloc[i, j]
+            })
+
+corr_df = pd.DataFrame(correlations).sort_values('Correlation', ascending=False)
+st.dataframe(corr_df.head(10), use_container_width=True, hide_index
