@@ -218,7 +218,14 @@ with col1:
     # Show statistics
     st.write("**Statistics:**")
     for _, row in dist_stats.iterrows():
-        st.write(f"**{row['distance_bin']}**: €{row['avg_price']:.0f} ({int(row['count'])} listings)"e']
+        st.write(f"**{row['distance_bin']}**: €{row['avg_price']:.0f} ({int(row['count'])} listings)")
+
+with col2:
+    # Metro accessibility
+    st.subheader("Price by Metro Station Proximity")
+    
+    metro_data = df_filtered.groupby('metro_accessibility', observed=True)['realSum'].mean().reset_index()
+    metro_data.columns = ['metro_accessibility', 'avg_price']
     metro_data = metro_data.dropna()
     
     fig_metro = go.Figure()
